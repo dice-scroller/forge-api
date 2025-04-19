@@ -5,11 +5,11 @@ import forge.game.player.IGameEntitiesFactory;
 import forge.game.player.Player;
 import forge.game.player.PlayerController;
 
-public class DummyLobbyPlayer extends LobbyPlayer implements IGameEntitiesFactory {
+public class ApiLobbyPlayer extends LobbyPlayer implements IGameEntitiesFactory {
 
     private final String name;
 
-    public DummyLobbyPlayer(String name) {
+    public ApiLobbyPlayer(String name) {
         super(name); // or call any parent constructor if required
         this.name = name;
     }

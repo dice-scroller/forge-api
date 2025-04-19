@@ -12,6 +12,7 @@ import forge.game.card.CardFactory;
 import forge.game.player.RegisteredPlayer;
 import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
+import org.junit.jupiter.api.Assertions;
 
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -21,29 +22,126 @@ import java.util.List;
 public class StateMapper {
     public static Game StateToGame(GameStateDTO state) {
         System.out.println("Start loading state");
-        Deck deck = new Deck();
-        // PlayerProfile profile = new PlayerProfile("AI Player");
         List<RegisteredPlayer> players = new ArrayList<>();
-        RegisteredPlayer player = new RegisteredPlayer(deck);
-        player.setPlayer(new DummyLobbyPlayer("Test"));
+
+        // HUMAN PLAYER
+
+        var deck = new Deck();
+        var player = new RegisteredPlayer(deck);
+        var lobbyPlayer = new ApiLobbyPlayer("API");
+        player.setPlayer(lobbyPlayer);
         players.add(player);
-        GameRules rules = new GameRules(GameType.Constructed);
-        Match match = new Match(rules, players, "Title");
+
+
+        // BOT PLAYER
+
+        var botDeck = new Deck();
+        var botPlayer = new RegisteredPlayer(botDeck);
+        var botLobbyPlayer = new ApiLobbyPlayer("BOT");
+        botPlayer.setPlayer(botLobbyPlayer);
+        players.add(botPlayer);
+
+        // GENERAL
+
+        var rules = new GameRules(GameType.Constructed);
+        var match = new Match(rules, players, "Title");
         var game =  new Game(players, rules, match);
 
-        game.getPlayer(0).setLife(state.PlayerLife, null); // TODO this should use a getter
 
-        // Load battlefield
+        // HUMAN
+
+        game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER).setLife(state.PlayerLife, null); // TODO this should use a getter
+
+        // Load
+
+        var currentPlayer = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER);
+        currentPlayer.setFirstController(new ApiPlayerController(game, currentPlayer, lobbyPlayer));
+        Assertions.assertNotNull(currentPlayer.getController());
 
         List<CardDTO> battlefield = state.PlayerBoard;
 
         for (CardDTO dto : battlefield) {
+            System.out.println("Mapping Battlefield: " + dto.name);
             Card card = CardDTOToCard(dto, game);
             card.setTapped(dto.IsTapped);
-            var currentPlayer = game.getPlayer(0);
             currentPlayer.getZone(ZoneType.Battlefield).add(card);
         }
 
+        List<CardDTO> hand = state.PlayerHand;
+        for (CardDTO dto : hand) {
+            System.out.println("Mapping Hand: " + dto.name);
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.IsTapped);
+            currentPlayer.getZone(ZoneType.Hand).add(card);
+        }
+
+
+        List<CardDTO> grave = state.PlayerGrave;
+        for (CardDTO dto : grave) {
+            System.out.println("Mapping Graveyard: " + dto.name);
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.IsTapped);
+            currentPlayer.getZone(ZoneType.Graveyard).add(card);
+        }
+
+
+        List<CardDTO> exile = state.PlayerExile;
+        for (CardDTO dto : exile) {
+            System.out.println("Mapping Exile: " + dto.name);
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.IsTapped);
+            currentPlayer.getZone(ZoneType.Exile).add(card);
+        }
+
+
+
+
+
+        // BOT PLAYER
+
+
+        game.getPlayer(ApiPlayerEnum.BOT_PLAYER).setLife(state.PlayerLife, null); // TODO this should use a getter
+
+        // Load
+
+        var currentBotPlayer = game.getPlayer(ApiPlayerEnum.BOT_PLAYER);
+        currentBotPlayer.setFirstController(new ApiPlayerController(game, currentBotPlayer, botLobbyPlayer));
+        Assertions.assertNotNull(currentBotPlayer.getController());
+
+        List<CardDTO> botBattlefield = state.BotBoard;
+
+        for (CardDTO dto : botBattlefield) {
+            System.out.println("Mapping Battlefield: " + dto.name);
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.IsTapped);
+            currentBotPlayer.getZone(ZoneType.Battlefield).add(card);
+        }
+
+        List<CardDTO> botHand = state.BotHand;
+        for (CardDTO dto : botHand) {
+            System.out.println("Mapping Hand: " + dto.name);
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.IsTapped);
+            currentBotPlayer.getZone(ZoneType.Hand).add(card);
+        }
+
+
+        List<CardDTO> botGrave = state.BotGrave;
+        for (CardDTO dto : botGrave) {
+            System.out.println("Mapping Graveyard: " + dto.name);
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.IsTapped);
+            currentBotPlayer.getZone(ZoneType.Graveyard).add(card);
+        }
+
+
+        List<CardDTO> botExile = state.BotExile;
+        for (CardDTO dto : botExile) {
+            System.out.println("Mapping Exile: " + dto.name);
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.IsTapped);
+            currentBotPlayer.getZone(ZoneType.Exile).add(card);
+        }
 
 
         System.out.println("Done loading state");
@@ -59,6 +157,6 @@ public class StateMapper {
         assertNotNull(cardDTO); // crash shit
         PaperCard paperCard = StaticData.instance().getCommonCards().getCard(cardDTO.name);
 
-        return CardFactory.getCard(paperCard, game.getPlayer(0), cardDTO.id, game);
+        return CardFactory.getCard(paperCard, game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER), cardDTO.id, game);
     }
 }

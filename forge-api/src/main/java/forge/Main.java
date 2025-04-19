@@ -11,6 +11,7 @@ import forge.game.GameRules;
 import forge.game.GameType;
 import forge.game.Match;
 import forge.game.player.RegisteredPlayer;
+import forge.util.Lang;
 import io.javalin.Javalin;
 import forge.util.Localizer;
 
@@ -18,7 +19,20 @@ public class Main {
     public static void main(String[] args) {
         // Init
         Localizer.getInstance().initialize("en-US", "forge-gui/res/languages");
+        Lang.createInstance("en-US");
+        FTrace.initialize();
 
+        ImageKeys.initializeDirs(
+                "res/pics/cards",
+                Map.of(), // or a map of edition → folder if needed
+                "res/pics/tokens",
+                "res/pics/icons",
+                "res/pics/boosters",
+                "res/pics/fatpacks",
+                "res/pics/boosterboxes",
+                "res/pics/precons",
+                "res/pics/tournamentpacks"
+        );
         CardStorageReader customCardReader = null; // or a valid one if you support custom cards
 
         CardStorageReader cardReader = new CardStorageReader("forge-gui/res/cardsfolder", null, false);
@@ -51,7 +65,7 @@ public class Main {
             var game = StateMapper.StateToGame(action.state);
 
             System.out.println();
-            var life = game.getPlayer(0).getLife();
+            var life = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER).getLife();
             // Load Game state
             ctx.json(Map.of("status", "ok", "received", action, "life", life));
         });
@@ -70,7 +84,7 @@ public class Main {
         // PlayerProfile profile = new PlayerProfile("AI Player");
         List<RegisteredPlayer> players = new ArrayList<>();
         RegisteredPlayer player = new RegisteredPlayer(deck);
-        player.setPlayer(new DummyLobbyPlayer("Test"));
+        player.setPlayer(new ApiLobbyPlayer("Test"));
         players.add(player);
         GameRules rules = new GameRules(GameType.Constructed);
         Match match = new Match(rules, players, "Title");
