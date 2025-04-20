@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import forge.ai.ComputerUtilCost;
-import forge.card.mana.ManaAtom;
 import forge.deck.Deck;
 import forge.dto.InputAction;
 import forge.dto.ReponseAction;
@@ -13,7 +12,6 @@ import forge.game.*;
 import forge.game.card.Card;
 import forge.game.card.CardUtil;
 import forge.game.combat.CombatUtil;
-import forge.game.mana.Mana;
 import forge.game.player.Player;
 import forge.game.player.PlayerPredicates;
 import forge.game.player.RegisteredPlayer;

@@ -2,7 +2,6 @@ package forge;
 
 import forge.deck.Deck;
 import forge.dto.CardDTO;
-import forge.dto.FloatingManaDTO;
 import forge.dto.GameStateDTO;
 import forge.game.Game;
 import forge.game.GameRules;

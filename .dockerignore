@@ -1,0 +1,9 @@
+**/target/
+**/.idea/
+**/.gitlab/
+**/.github/
+**/.mvn/
+**/.vscode/
+**/*.iml
+*.log
+.git
