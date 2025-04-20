@@ -1,12 +1,9 @@
 package forge.dto;
 
-import forge.game.card.Card;
-import forge.game.player.Player;
-import forge.game.player.PlayerCollection;
-
-import java.util.ArrayList;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ReponseAction {
     public String name;
     public boolean canActivate;

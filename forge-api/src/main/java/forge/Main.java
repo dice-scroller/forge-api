@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import forge.ai.ComputerUtilCost;
+import forge.card.mana.ManaAtom;
 import forge.deck.Deck;
 import forge.dto.InputAction;
 import forge.dto.ReponseAction;
@@ -11,6 +13,7 @@ import forge.game.*;
 import forge.game.card.Card;
 import forge.game.card.CardUtil;
 import forge.game.combat.CombatUtil;
+import forge.game.mana.Mana;
 import forge.game.player.Player;
 import forge.game.player.PlayerPredicates;
 import forge.game.player.RegisteredPlayer;
@@ -68,6 +71,7 @@ public class Main {
 
             ctx.json(Map.of("status", "ok", "received", action));
             var game = StateMapper.StateToGame(action.state);
+            var humanPlayer = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER);
 
             Card card = game.getCardsInGame().stream()
                     .filter(c -> c.getId() == action.source)
@@ -87,6 +91,7 @@ public class Main {
                 List<ReponseAction> responseActions = new ArrayList<>();
 
                 for (SpellAbility sb : actions) {
+                    System.out.println("Cost: " + sb.getCostDescription());
                     System.out.println("SpellAbility: " + sb.toString());
                     System.out.println("Can play mechanically: " + sb.canPlay());
 
@@ -111,6 +116,11 @@ public class Main {
                     }
                     System.out.println("Uses targeting: " + sb.usesTargeting());
 
+                    var manaCost = sb.getPayCosts().getTotalMana();
+                    System.out.println("Mana Cost: " + manaCost);
+                    var canPay = ComputerUtilCost.canPayCost(sb, humanPlayer, false);
+
+                    System.out.println("Can pay: " + canPay);
 
                     System.out.println(newAction);
                 }

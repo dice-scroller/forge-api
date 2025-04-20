@@ -4,15 +4,18 @@ import java.util.List;
 
 public class GameStateDTO {
     public String Phase;
-    public int PlayerLife;
-    public int BotLife;
 
+
+    public int PlayerLife;
+    public FloatingManaDTO PlayerFloatingMana;
     public List<CardDTO> PlayerDeck;
     public List<CardDTO> PlayerHand;
     public List<CardDTO> PlayerBoard;
     public List<CardDTO> PlayerExile;
     public List<CardDTO> PlayerGrave;
 
+    public int BotLife;
+    public FloatingManaDTO BotFloatingMana;
     public List<CardDTO> BotDeck;
     public List<CardDTO> BotHand;
     public List<CardDTO> BotBoard;

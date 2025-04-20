@@ -2,6 +2,7 @@ package forge;
 
 import forge.deck.Deck;
 import forge.dto.CardDTO;
+import forge.dto.FloatingManaDTO;
 import forge.dto.GameStateDTO;
 import forge.game.Game;
 import forge.game.GameRules;
@@ -59,6 +60,10 @@ public class StateMapper {
         currentPlayer.setFirstController(new ApiPlayerController(game, currentPlayer, lobbyPlayer));
         Assertions.assertNotNull(currentPlayer.getController());
 
+        if (state.PlayerFloatingMana != null) {
+            state.PlayerFloatingMana.addToPlayer(currentPlayer);
+        }
+
         List<CardDTO> battlefield = state.PlayerBoard;
 
         for (CardDTO dto : battlefield) {
@@ -109,6 +114,11 @@ public class StateMapper {
         currentBotPlayer.setFirstController(new ApiPlayerController(game, currentBotPlayer, botLobbyPlayer));
         Assertions.assertNotNull(currentBotPlayer.getController());
 
+
+        if (state.BotFloatingMana != null) {
+            state.BotFloatingMana.addToPlayer(currentBotPlayer);
+        }
+
         List<CardDTO> botBattlefield = state.BotBoard;
 
         for (CardDTO dto : botBattlefield) {
@@ -144,7 +154,7 @@ public class StateMapper {
             currentBotPlayer.getZone(ZoneType.Exile).add(card);
         }
 
-        game.getPhaseHandler().devModeSet(MapPhase(state.Phase), currentPlayer); // TODO handle other phases later
+        game.getPhaseHandler().devModeSet(MapPhase(state.Phase), currentPlayer);
         System.out.println("Phase: " + game.getPhaseHandler().getPhase());
 
         System.out.println("Done loading state");
@@ -160,7 +170,7 @@ public class StateMapper {
         assertNotNull(cardDTO); // crash shit
         PaperCard paperCard = StaticData.instance().getCommonCards().getCard(cardDTO.name);
 
-        return CardFactory.getCard(paperCard, game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER), cardDTO.id, game);
+        return CardFactory.getCard(paperCard, game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER), cardDTO.id, game); // TODO this needs a try / catch
     }
 
     public static PhaseType MapPhase(String phase) {
