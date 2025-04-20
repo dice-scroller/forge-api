@@ -6,11 +6,15 @@ import java.util.Map;
 
 import forge.deck.Deck;
 import forge.dto.InputAction;
-import forge.game.Game;
-import forge.game.GameRules;
-import forge.game.GameType;
-import forge.game.Match;
+import forge.dto.ReponseAction;
+import forge.game.*;
+import forge.game.card.Card;
+import forge.game.card.CardUtil;
+import forge.game.combat.CombatUtil;
+import forge.game.player.Player;
+import forge.game.player.PlayerPredicates;
 import forge.game.player.RegisteredPlayer;
+import forge.game.spellability.SpellAbility;
 import forge.util.Lang;
 import io.javalin.Javalin;
 import forge.util.Localizer;
@@ -62,12 +66,70 @@ public class Main {
             InputAction action = ctx.bodyAsClass(InputAction.class);
             System.out.println(action);
 
+            ctx.json(Map.of("status", "ok", "received", action));
             var game = StateMapper.StateToGame(action.state);
 
-            System.out.println();
-            var life = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER).getLife();
-            // Load Game state
-            ctx.json(Map.of("status", "ok", "received", action, "life", life));
+            Card card = game.getCardsInGame().stream()
+                    .filter(c -> c.getId() == action.source)
+                    .findFirst()
+                    .orElse(null);
+
+            if (card != null) {
+                System.out.println("Selected: " + card.getName());
+                var actions = card.getAllSpellAbilities();
+
+                List<String> options = actions.stream()
+                        .map(SpellAbility::toString)
+                        .toList();
+                System.out.println("Options: " + options);
+
+
+                List<ReponseAction> responseActions = new ArrayList<>();
+
+                for (SpellAbility sb : actions) {
+                    System.out.println("SpellAbility: " + sb.toString());
+                    System.out.println("Can play mechanically: " + sb.canPlay());
+
+                    var newAction = new ReponseAction(
+                            sb.toString(),
+                            sb.canPlay()
+                    );
+                    responseActions.add(newAction);
+
+                    if (sb.usesTargeting()) {
+                        var cardTargets = CardUtil.getValidCardsToTarget(sb);
+                        newAction.setCardTargets(
+                                cardTargets.stream()
+                                        .map(Card::getId)
+                                        .toList()
+                        );
+                        System.out.println("Possible Card Targets: " + cardTargets);
+
+                        var targetablePlayers = game.getPlayers().filter(PlayerPredicates.isTargetableBy(sb));
+                        newAction.setPlayerTargets(targetablePlayers.stream().map(Player::toString).toList());
+                        System.out.println("Player Targets: " + targetablePlayers);
+                    }
+                    System.out.println("Uses targeting: " + sb.usesTargeting());
+
+
+                    System.out.println(newAction);
+                }
+
+                if (card.isCreature()) {
+                    Player defender = game.getPlayer(ApiPlayerEnum.BOT_PLAYER);
+                    // Player attacker = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER);
+
+                    card.setSickness(false); // TODO this should be default - probably overwrite if true based on state json
+                    boolean canAttack = CombatUtil.canAttack(card, defender);
+                    System.out.println("Can Attack: " + canAttack);
+                }
+
+
+
+
+                ctx.json(Map.of("actions", responseActions));
+            }
+
         });
 
         app.post("/load-game", ctx -> {

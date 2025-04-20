@@ -3,6 +3,7 @@ package forge.dto;
 import java.util.List;
 
 public class GameStateDTO {
+    public String Phase;
     public int PlayerLife;
     public int BotLife;
 

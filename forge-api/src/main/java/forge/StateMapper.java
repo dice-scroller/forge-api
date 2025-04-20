@@ -9,6 +9,7 @@ import forge.game.GameType;
 import forge.game.Match;
 import forge.game.card.Card;
 import forge.game.card.CardFactory;
+import forge.game.phase.PhaseType;
 import forge.game.player.RegisteredPlayer;
 import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
@@ -143,6 +144,8 @@ public class StateMapper {
             currentBotPlayer.getZone(ZoneType.Exile).add(card);
         }
 
+        game.getPhaseHandler().devModeSet(MapPhase(state.Phase), currentPlayer); // TODO handle other phases later
+        System.out.println("Phase: " + game.getPhaseHandler().getPhase());
 
         System.out.println("Done loading state");
         return game;
@@ -158,5 +161,25 @@ public class StateMapper {
         PaperCard paperCard = StaticData.instance().getCommonCards().getCard(cardDTO.name);
 
         return CardFactory.getCard(paperCard, game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER), cardDTO.id, game);
+    }
+
+    public static PhaseType MapPhase(String phase) {
+
+        return switch (phase) {
+            case "UNTAP" -> PhaseType.UNTAP;
+            case "UPKEEP" -> PhaseType.UPKEEP;
+            case "DRAW" -> PhaseType.DRAW;
+            case "MAIN1" -> PhaseType.MAIN1;
+            case "COMBAT_BEGIN" -> PhaseType.COMBAT_BEGIN;
+            case "COMBAT_DECLARE_ATTACKERS" -> PhaseType.COMBAT_DECLARE_ATTACKERS;
+            case "COMBAT_DECLARE_BLOCKERS" -> PhaseType.COMBAT_DECLARE_BLOCKERS;
+            case "COMBAT_FIRST_STRIKE_DAMAGE" -> PhaseType.COMBAT_FIRST_STRIKE_DAMAGE;
+            case "COMBAT_DAMAGE" -> PhaseType.COMBAT_DAMAGE;
+            case "COMBAT_END" -> PhaseType.COMBAT_END;
+            case "MAIN2" -> PhaseType.MAIN2;
+            case "END_OF_TURN" -> PhaseType.END_OF_TURN;
+            case "CLEANUP" -> PhaseType.CLEANUP;
+            default -> throw new RuntimeException("Unknow Phase: " + phase);
+        };
     }
 }
