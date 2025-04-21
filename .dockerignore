@@ -1,10 +1,13 @@
-**/target/
-!forge-api/target/
-**/.idea/
-**/.gitlab/
-**/.github/
-**/.mvn/
-**/.vscode/
-**/*.iml
+# **/target/
+# !forge-api/target/
+# !forge-api/target/forge-api-0.0.1.jar
+
+# Exclude dotfiles
+.idea/
+.gitlab/
+.github/
+.mvn/
+.vscode/
+*.iml
 *.log
 .git
