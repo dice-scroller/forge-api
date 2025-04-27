@@ -2,12 +2,15 @@ package forge;
 
 import forge.deck.Deck;
 import forge.dto.CardDTO;
+import forge.dto.FloatingManaDTO;
 import forge.dto.GameStateDTO;
+import forge.dto.StackDTO;
 import forge.game.Game;
 import forge.game.GameRules;
 import forge.game.GameType;
 import forge.game.Match;
 import forge.game.card.Card;
+import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactory;
 import forge.game.phase.PhaseType;
 import forge.game.player.RegisteredPlayer;
@@ -51,7 +54,7 @@ public class StateMapper {
 
         // HUMAN
 
-        game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER).setLife(state.PlayerLife, null); // TODO this should use a getter
+        game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER).setLife(state.playerLife, null); // TODO this should use a getter
 
         // Load
 
@@ -59,11 +62,11 @@ public class StateMapper {
         currentPlayer.setFirstController(new ApiPlayerController(game, currentPlayer, lobbyPlayer));
         Assertions.assertNotNull(currentPlayer.getController());
 
-        if (state.PlayerFloatingMana != null) {
-            state.PlayerFloatingMana.addToPlayer(currentPlayer);
+        if (state.playerFloatingMana != null) {
+            state.playerFloatingMana.addToPlayer(currentPlayer);
         }
 
-        List<CardDTO> battlefield = state.PlayerBoard;
+        List<CardDTO> battlefield = state.playerBoard;
 
         for (CardDTO dto : battlefield) {
             System.out.println("Mapping Battlefield: " + dto.name);
@@ -72,7 +75,7 @@ public class StateMapper {
             currentPlayer.getZone(ZoneType.Battlefield).add(card);
         }
 
-        List<CardDTO> hand = state.PlayerHand;
+        List<CardDTO> hand = state.playerHand;
         for (CardDTO dto : hand) {
             System.out.println("Mapping Hand: " + dto.name);
             Card card = CardDTOToCard(dto, game);
@@ -81,7 +84,7 @@ public class StateMapper {
         }
 
 
-        List<CardDTO> grave = state.PlayerGrave;
+        List<CardDTO> grave = state.playerGrave;
         for (CardDTO dto : grave) {
             System.out.println("Mapping Graveyard: " + dto.name);
             Card card = CardDTOToCard(dto, game);
@@ -90,7 +93,7 @@ public class StateMapper {
         }
 
 
-        List<CardDTO> exile = state.PlayerExile;
+        List<CardDTO> exile = state.playerExile;
         for (CardDTO dto : exile) {
             System.out.println("Mapping Exile: " + dto.name);
             Card card = CardDTOToCard(dto, game);
@@ -105,7 +108,7 @@ public class StateMapper {
         // BOT PLAYER
 
 
-        game.getPlayer(ApiPlayerEnum.BOT_PLAYER).setLife(state.PlayerLife, null); // TODO this should use a getter
+        game.getPlayer(ApiPlayerEnum.BOT_PLAYER).setLife(state.playerLife, null); // TODO this should use a getter
 
         // Load
 
@@ -114,11 +117,11 @@ public class StateMapper {
         Assertions.assertNotNull(currentBotPlayer.getController());
 
 
-        if (state.BotFloatingMana != null) {
-            state.BotFloatingMana.addToPlayer(currentBotPlayer);
+        if (state.botFloatingMana != null) {
+            state.botFloatingMana.addToPlayer(currentBotPlayer);
         }
 
-        List<CardDTO> botBattlefield = state.BotBoard;
+        List<CardDTO> botBattlefield = state.botBoard;
 
         for (CardDTO dto : botBattlefield) {
             System.out.println("Mapping Battlefield: " + dto.name);
@@ -127,7 +130,7 @@ public class StateMapper {
             currentBotPlayer.getZone(ZoneType.Battlefield).add(card);
         }
 
-        List<CardDTO> botHand = state.BotHand;
+        List<CardDTO> botHand = state.botHand;
         for (CardDTO dto : botHand) {
             System.out.println("Mapping Hand: " + dto.name);
             Card card = CardDTOToCard(dto, game);
@@ -136,7 +139,7 @@ public class StateMapper {
         }
 
 
-        List<CardDTO> botGrave = state.BotGrave;
+        List<CardDTO> botGrave = state.botGrave;
         for (CardDTO dto : botGrave) {
             System.out.println("Mapping Graveyard: " + dto.name);
             Card card = CardDTOToCard(dto, game);
@@ -145,7 +148,7 @@ public class StateMapper {
         }
 
 
-        List<CardDTO> botExile = state.BotExile;
+        List<CardDTO> botExile = state.botExile;
         for (CardDTO dto : botExile) {
             System.out.println("Mapping Exile: " + dto.name);
             Card card = CardDTOToCard(dto, game);
@@ -153,7 +156,7 @@ public class StateMapper {
             currentBotPlayer.getZone(ZoneType.Exile).add(card);
         }
 
-        game.getPhaseHandler().devModeSet(MapPhase(state.Phase), currentPlayer);
+        game.getPhaseHandler().devModeSet(MapPhase(state.phase), currentPlayer);
         System.out.println("Phase: " + game.getPhaseHandler().getPhase());
 
         System.out.println("### Done loading state ###");
@@ -161,8 +164,58 @@ public class StateMapper {
     }
 
     public static GameStateDTO GameToState(Game game) {
-        // TODO
-        return null;
+        System.out.println("Mapping Game -> State");
+
+        final var human = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER);
+        final var bot = game.getPlayer(ApiPlayerEnum.BOT_PLAYER);
+
+        var phase = game.getPhaseHandler().getPhase().toString();
+        var stack = StackDTO.fromStack(game.getStack());
+
+        // Human stuff
+        var humanLife = human.getLife();
+        var humanMana = FloatingManaDTO.getFromPlayer(human);
+        var humanLibrary = StateMapper.cardCollectionToList(human.getCardsIn(ZoneType.Library));
+        var humanHand = StateMapper.cardCollectionToList(human.getCardsIn(ZoneType.Hand));
+        var humanBattlefield = StateMapper.cardCollectionToList(human.getCardsIn(ZoneType.Battlefield));
+        var humanGraveyard = StateMapper.cardCollectionToList(human.getCardsIn(ZoneType.Graveyard));
+        var humanExile = StateMapper.cardCollectionToList(human.getCardsIn(ZoneType.Exile));
+
+
+        // Bot stuff
+        var botLife = bot.getLife();
+        var botMana = FloatingManaDTO.getFromPlayer(bot);
+        var botLibrary = StateMapper.cardCollectionToList(bot.getCardsIn(ZoneType.Library));
+        var botHand = StateMapper.cardCollectionToList(bot.getCardsIn(ZoneType.Hand));
+        var botBattlefield = StateMapper.cardCollectionToList(bot.getCardsIn(ZoneType.Battlefield));
+        var botGraveyard = StateMapper.cardCollectionToList(bot.getCardsIn(ZoneType.Graveyard));
+        var botExile = StateMapper.cardCollectionToList(bot.getCardsIn(ZoneType.Exile));
+
+        // I HATE JAVA
+        return new GameStateDTO(
+                phase,
+                stack,
+                humanLife,
+                humanMana,
+                humanLibrary,
+                humanHand,
+                humanBattlefield,
+                humanExile,
+                humanGraveyard,
+                botLife,
+                botMana,
+                botLibrary,
+                botHand,
+                botBattlefield,
+                botExile,
+                botGraveyard
+        );
+    }
+
+    private static List<CardDTO> cardCollectionToList(CardCollectionView collection) {
+        return collection.stream()
+                .map(CardDTO::fromCard)
+                .toList();
     }
 
     public static Card CardDTOToCard(CardDTO cardDTO, Game game){

@@ -5,12 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import forge.ai.ComputerUtil;
-import forge.ai.ComputerUtilAbility;
 import forge.ai.ComputerUtilCost;
-import forge.card.mana.ManaAtom;
 import forge.deck.Deck;
 import forge.dto.Act;
+import forge.dto.CardDTO;
 import forge.dto.InputAction;
 import forge.dto.ReponseAction;
 import forge.game.*;
@@ -25,6 +23,7 @@ import forge.game.spellability.SpellAbility;
 import forge.util.Lang;
 import io.javalin.Javalin;
 import forge.util.Localizer;
+import org.junit.jupiter.api.Assertions;
 
 public class Main {
     public static void main(String[] args) {
@@ -67,8 +66,15 @@ public class Main {
         );
         Javalin app = Javalin.create().start(7000);
 
+        /*
+         * Simple check to verify API is running
+         */
         app.get("/", ctx -> ctx.result("It works!"));
 
+        /*
+         * Endpoint to evaluate a given action.
+         * Should produce a new, changed game state.
+         */
         app.post("/act", ctx -> {
             final var action = ctx.bodyAsClass(Act.class);
             System.out.println("Got request to act: " + action.action + " at target: " + action.target);
@@ -93,6 +99,7 @@ public class Main {
 
             for (int i = 0; i < actions.size(); i++) {
                 var name = actions.get(i).toString();
+                System.out.println(name);
                 if (Objects.equals(action.action, name)) {
                     var id = actions.get(i).getId();
                     System.out.println("ID: " + id);
@@ -100,7 +107,11 @@ public class Main {
                 }
             }
 
-            System.out.println(humanPlayer.getManaPool().getAmountOfColor(ManaAtom.fromName("r")));
+            sa = actions.get(action.actionId);
+
+            System.out.println("Action:" + action.action);
+            Assertions.assertNotNull(sa);
+
             sa.setActivatingPlayer(humanPlayer);
 
             var target = game.getCardsInGame().stream()
@@ -118,20 +129,24 @@ public class Main {
                 game.getStack().add(sa);
                 System.out.println("Put on stack");
                 System.out.println(game.getStack().peekAbility());
-                game.getStack().resolveStack();
+                //game.getStack().resolveStack();
+                //game.getAction().checkStateEffects(false);
             } else {
                 System.out.println("Nope");
             }
 
-            System.out.println("Activated: " + sa.getActivationsThisTurn()); // IDK what this does, did it not get cast
-            System.out.println(humanPlayer.getManaPool().getAmountOfColor(ManaAtom.fromName("r"))); // Mana was paid correctly (?)
+            var newState = StateMapper.GameToState(game);
 
-            System.out.println("Toughness: " + target.getCurrentToughness()); //FIXME this didn't actual do damage?
-
-            ctx.json(Map.of("status", "Ok", "received", action));
+            ctx.json(Map.of("status", "Ok", "state", newState));
 
         });
 
+        /*
+         * Endpoint to evaluate possible actions that can be taken.
+         * Request contains a source card of which possible actions to be taken should be returned
+         *
+         * TODO This should work for creatures wanting to attack etc. as well
+         */
         app.post("/submit-action", ctx -> {
             InputAction action = ctx.bodyAsClass(InputAction.class);
             System.out.println(action);
@@ -157,6 +172,7 @@ public class Main {
 
                 List<ReponseAction> responseActions = new ArrayList<>();
 
+                var actionIndex = 0;
                 for (SpellAbility sb : actions) {
                     System.out.println("Cost: " + sb.getCostDescription());
                     System.out.println("SpellAbility: " + sb.toString());
@@ -164,17 +180,21 @@ public class Main {
 
                     var newAction = new ReponseAction(
                             sb.toString(),
-                            sb.canPlay()
+                            sb.canPlay(),
+                            sb.getHostCard().getId(),
+                            actionIndex
                     );
                     responseActions.add(newAction);
+                    actionIndex ++;
 
                     if (sb.usesTargeting()) {
                         var cardTargets = CardUtil.getValidCardsToTarget(sb);
-                        newAction.setCardTargets(
-                                cardTargets.stream()
-                                        .map(Card::getId)
-                                        .toList()
-                        );
+
+                        var targetList = new ArrayList<CardDTO>();
+                        for (int i = 0; i < cardTargets.size(); i++) {
+                            targetList.add(CardDTO.fromCard(cardTargets.get(i)));
+                        }
+                        newAction.setCardTargets(targetList);
                         System.out.println("Possible Card Targets: " + cardTargets);
 
                         var targetablePlayers = game.getPlayers().filter(PlayerPredicates.isTargetableBy(sb));

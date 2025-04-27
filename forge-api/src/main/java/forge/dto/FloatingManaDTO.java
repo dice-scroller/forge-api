@@ -1,21 +1,30 @@
 package forge.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import forge.card.mana.ManaAtom;
 import forge.game.card.Card;
 import forge.game.mana.Mana;
 import forge.game.player.Player;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Map;
 
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+@Data
 public class FloatingManaDTO {
-    public int w;
-    public int u;
-    public int b;
-    public int r;
-    public int g;
-    public int c;
+    public int w = 0;
+    public int u = 0;
+    public int b = 0;
+    public int r = 0;
+    public int g = 0;
+    public int c = 0;
 
+    /**
+     * Adds the Mana of the instance to the Player's mana pool
+     *
+     * @param player
+     */
     public void addToPlayer(Player player) {
         var card = new Card(-1, player.getGame()); // I hope this doesn't break things
         var manaList = new ArrayList<Mana>();
@@ -41,5 +50,32 @@ public class FloatingManaDTO {
         }
 
         player.getManaPool().add(manaList);
+    }
+
+    /**
+     *
+     * @param player
+     * @return Floating mana the player currently has
+     */
+    public static FloatingManaDTO getFromPlayer(Player player) {
+
+        // TODO refactor
+        var newFloating = new FloatingManaDTO();
+
+        var w = player.getManaPool().getAmountOfColor(ManaAtom.fromName("w"));
+        var u = player.getManaPool().getAmountOfColor(ManaAtom.fromName("u"));
+        var b = player.getManaPool().getAmountOfColor(ManaAtom.fromName("b"));
+        var r = player.getManaPool().getAmountOfColor(ManaAtom.fromName("r"));
+        var g = player.getManaPool().getAmountOfColor(ManaAtom.fromName("g"));
+        var c = player.getManaPool().getAmountOfColor(ManaAtom.fromName("c"));
+
+        newFloating.setW(w);
+        newFloating.setU(u);
+        newFloating.setB(b);
+        newFloating.setR(r);
+        newFloating.setG(g);
+        newFloating.setC(c);
+
+        return newFloating;
     }
 }
