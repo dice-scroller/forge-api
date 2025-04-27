@@ -2,8 +2,10 @@ package forge;
 
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
+import forge.ai.ComputerUtilMana;
 import forge.card.ColorSet;
 import forge.card.ICardFace;
+import forge.card.mana.ManaAtom;
 import forge.card.mana.ManaCost;
 import forge.card.mana.ManaCostShard;
 import forge.deck.Deck;
@@ -504,7 +506,7 @@ public class ApiPlayerController extends PlayerController {
 
     @Override
     public boolean payManaCost(ManaCost toPay, CostPartMana costPartMana, SpellAbility sa, String prompt, ManaConversionMatrix matrix, boolean effect) {
-        return false;
+        return ComputerUtilMana.payManaCost(new Cost(toPay, effect), player, sa, effect);
     }
 
     @Override

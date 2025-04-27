@@ -22,7 +22,7 @@ import java.util.List;
 
 public class StateMapper {
     public static Game StateToGame(GameStateDTO state) {
-        System.out.println("Start loading state");
+        System.out.println("### Start loading state ###");
         List<RegisteredPlayer> players = new ArrayList<>();
 
         // HUMAN PLAYER
@@ -156,7 +156,7 @@ public class StateMapper {
         game.getPhaseHandler().devModeSet(MapPhase(state.Phase), currentPlayer);
         System.out.println("Phase: " + game.getPhaseHandler().getPhase());
 
-        System.out.println("Done loading state");
+        System.out.println("### Done loading state ###");
         return game;
     }
 

@@ -3,15 +3,21 @@ package forge;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
+import forge.ai.ComputerUtil;
+import forge.ai.ComputerUtilAbility;
 import forge.ai.ComputerUtilCost;
+import forge.card.mana.ManaAtom;
 import forge.deck.Deck;
+import forge.dto.Act;
 import forge.dto.InputAction;
 import forge.dto.ReponseAction;
 import forge.game.*;
 import forge.game.card.Card;
 import forge.game.card.CardUtil;
 import forge.game.combat.CombatUtil;
+import forge.game.cost.CostPayment;
 import forge.game.player.Player;
 import forge.game.player.PlayerPredicates;
 import forge.game.player.RegisteredPlayer;
@@ -63,11 +69,74 @@ public class Main {
 
         app.get("/", ctx -> ctx.result("It works!"));
 
+        app.post("/act", ctx -> {
+            final var action = ctx.bodyAsClass(Act.class);
+            System.out.println("Got request to act: " + action.action + " at target: " + action.target);
+
+            final var game = StateMapper.StateToGame(action.state);
+            final var humanPlayer = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER);
+
+            Card card = game.getCardsInGame().stream()
+                    .filter(c -> c.getId() == action.source)
+                    .findFirst()
+                    .orElse(null);
+
+            if (card == null) {
+                ctx.json(Map.of("status", "Error, card not found", "received", action));
+                return;
+            }
+
+
+            var actions = card.getAllSpellAbilities();
+
+            SpellAbility sa = null;
+
+            for (int i = 0; i < actions.size(); i++) {
+                var name = actions.get(i).toString();
+                if (Objects.equals(action.action, name)) {
+                    var id = actions.get(i).getId();
+                    System.out.println("ID: " + id);
+                    sa = actions.get(i);
+                }
+            }
+
+            System.out.println(humanPlayer.getManaPool().getAmountOfColor(ManaAtom.fromName("r")));
+            sa.setActivatingPlayer(humanPlayer);
+
+            var target = game.getCardsInGame().stream()
+                    .filter(c -> c.getId() == action.target)
+                    .findFirst()
+                    .orElse(null);
+
+            sa.setTargetCard(target);
+
+            var payment = new CostPayment(sa.getPayCosts(), sa);
+
+            var paid = payment.payCost(new ApiCostDecisionMaker(humanPlayer, sa));
+
+            if (paid) {
+                game.getStack().add(sa);
+                System.out.println("Put on stack");
+                System.out.println(game.getStack().peekAbility());
+                game.getStack().resolveStack();
+            } else {
+                System.out.println("Nope");
+            }
+
+            System.out.println("Activated: " + sa.getActivationsThisTurn()); // IDK what this does, did it not get cast
+            System.out.println(humanPlayer.getManaPool().getAmountOfColor(ManaAtom.fromName("r"))); // Mana was paid correctly (?)
+
+            System.out.println("Toughness: " + target.getCurrentToughness()); //FIXME this didn't actual do damage?
+
+            ctx.json(Map.of("status", "Ok", "received", action));
+
+        });
+
         app.post("/submit-action", ctx -> {
             InputAction action = ctx.bodyAsClass(InputAction.class);
             System.out.println(action);
 
-            ctx.json(Map.of("status", "ok", "received", action));
+            ctx.json(Map.of("status", "Error, card not found", "received", action));
             var game = StateMapper.StateToGame(action.state);
             var humanPlayer = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER);
 
