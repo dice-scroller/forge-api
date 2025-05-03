@@ -13,6 +13,7 @@ import forge.game.card.Card;
 import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactory;
 import forge.game.phase.PhaseType;
+import forge.game.player.Player;
 import forge.game.player.RegisteredPlayer;
 import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
@@ -66,44 +67,11 @@ public class StateMapper {
             state.playerFloatingMana.addToPlayer(currentPlayer);
         }
 
-        List<CardDTO> battlefield = state.playerBoard;
-
-        for (CardDTO dto : battlefield) {
-            System.out.println("Mapping Battlefield: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentPlayer.getZone(ZoneType.Battlefield).add(card);
-        }
-
-        List<CardDTO> hand = state.playerHand;
-        for (CardDTO dto : hand) {
-            System.out.println("Mapping Hand: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentPlayer.getZone(ZoneType.Hand).add(card);
-        }
-
-
-        List<CardDTO> grave = state.playerGrave;
-        for (CardDTO dto : grave) {
-            System.out.println("Mapping Graveyard: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentPlayer.getZone(ZoneType.Graveyard).add(card);
-        }
-
-
-        List<CardDTO> exile = state.playerExile;
-        for (CardDTO dto : exile) {
-            System.out.println("Mapping Exile: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentPlayer.getZone(ZoneType.Exile).add(card);
-        }
-
-
-
-
+        StateMapper.MapDtoToZone(state.playerBoard, ZoneType.Battlefield, game, currentPlayer);
+        StateMapper.MapDtoToZone(state.playerHand, ZoneType.Hand, game, currentPlayer);
+        StateMapper.MapDtoToZone(state.playerGrave, ZoneType.Graveyard, game, currentPlayer);
+        StateMapper.MapDtoToZone(state.playerExile, ZoneType.Exile, game, currentPlayer);
+        StateMapper.MapDtoToZone(state.playerDeck, ZoneType.Library, game, currentPlayer);
 
         // BOT PLAYER
 
@@ -121,46 +89,34 @@ public class StateMapper {
             state.botFloatingMana.addToPlayer(currentBotPlayer);
         }
 
-        List<CardDTO> botBattlefield = state.botBoard;
+        StateMapper.MapDtoToZone(state.botBoard, ZoneType.Battlefield, game, currentBotPlayer);
+        StateMapper.MapDtoToZone(state.botHand, ZoneType.Hand, game, currentBotPlayer);
+        StateMapper.MapDtoToZone(state.botGrave, ZoneType.Graveyard, game, currentBotPlayer);
+        StateMapper.MapDtoToZone(state.botExile, ZoneType.Exile, game, currentBotPlayer);
+        StateMapper.MapDtoToZone(state.botDeck, ZoneType.Library, game, currentBotPlayer);
 
-        for (CardDTO dto : botBattlefield) {
-            System.out.println("Mapping Battlefield: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentBotPlayer.getZone(ZoneType.Battlefield).add(card);
-        }
-
-        List<CardDTO> botHand = state.botHand;
-        for (CardDTO dto : botHand) {
-            System.out.println("Mapping Hand: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentBotPlayer.getZone(ZoneType.Hand).add(card);
-        }
-
-
-        List<CardDTO> botGrave = state.botGrave;
-        for (CardDTO dto : botGrave) {
-            System.out.println("Mapping Graveyard: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentBotPlayer.getZone(ZoneType.Graveyard).add(card);
-        }
-
-
-        List<CardDTO> botExile = state.botExile;
-        for (CardDTO dto : botExile) {
-            System.out.println("Mapping Exile: " + dto.name);
-            Card card = CardDTOToCard(dto, game);
-            card.setTapped(dto.IsTapped);
-            currentBotPlayer.getZone(ZoneType.Exile).add(card);
-        }
 
         game.getPhaseHandler().devModeSet(MapPhase(state.phase), currentPlayer);
         System.out.println("Phase: " + game.getPhaseHandler().getPhase());
 
+        if (state.getStack() != null && state.getStack().stack != null && !state.getStack().stack.isEmpty()) {
+            state.getStack().applyToMagicStack(game);
+        }
+
         System.out.println("### Done loading state ###");
         return game;
+    }
+
+    private static void MapDtoToZone(List<CardDTO> dtoZone, ZoneType zone, Game game, Player player) {
+        if (dtoZone == null || dtoZone.isEmpty()) {
+            return;
+        }
+
+        for (CardDTO dto : dtoZone) {
+            Card card = CardDTOToCard(dto, game);
+            card.setTapped(dto.isTapped);
+            player.getZone(zone).add(card);
+        }
     }
 
     public static GameStateDTO GameToState(Game game) {

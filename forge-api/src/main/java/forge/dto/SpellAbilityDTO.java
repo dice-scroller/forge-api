@@ -10,19 +10,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SpellAbilityDTO {
     public String name;
-    /**
-     * The source should be in the form of a card id
-     */
-    public int source;
-
-
-    /**
-     * The target should be card id for now
-     * TODO implement targeting players and effects etc
-     */
-    public int target;
+    public CardDTO source;
+    public CardDTO target;
 
     public static SpellAbilityDTO fromSpellAbility(SpellAbility sa) {
-        return new SpellAbilityDTO(sa.toString(), sa.getId(), sa.getTargetCard().getId());
+        return new SpellAbilityDTO(sa.toString(), CardDTO.fromCard(sa.getHostCard()), CardDTO.fromCard(sa.getTargetCard()));
     }
 }

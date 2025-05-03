@@ -7,17 +7,23 @@ import forge.game.card.Card;
 public class CardDTO {
     public String name;
     public int id;
-    public boolean IsTapped = false;
+    public boolean isTapped = false;
+    public boolean isLand = false;
 
     public CardDTO() {} // Required by Jackson
 
     public static CardDTO fromCard(Card card) {
 
+        if (card == null) {
+            return new CardDTO();
+        }
+
         var newCardDTO = new CardDTO();
 
         newCardDTO.name = card.getName();
         newCardDTO.id = card.getId();
-        newCardDTO.IsTapped = card.isTapped();
+        newCardDTO.isTapped = card.isTapped();
+        newCardDTO.isLand = card.isLand();
 
         return newCardDTO;
     }

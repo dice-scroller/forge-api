@@ -7,10 +7,7 @@ import java.util.Objects;
 
 import forge.ai.ComputerUtilCost;
 import forge.deck.Deck;
-import forge.dto.Act;
-import forge.dto.CardDTO;
-import forge.dto.InputAction;
-import forge.dto.ReponseAction;
+import forge.dto.*;
 import forge.game.*;
 import forge.game.card.Card;
 import forge.game.card.CardUtil;
@@ -126,11 +123,21 @@ public class Main {
             var paid = payment.payCost(new ApiCostDecisionMaker(humanPlayer, sa));
 
             if (paid) {
+                var before = game.getStack().size();
                 game.getStack().add(sa);
-                System.out.println("Put on stack");
-                System.out.println(game.getStack().peekAbility());
-                //game.getStack().resolveStack();
-                //game.getAction().checkStateEffects(false);
+
+
+                var stackUnchanged = game.getStack().size() == before;
+                if (stackUnchanged) {
+                    // don't resolve
+                    System.out.println("Stack unchanged, not resolving");
+                } else {
+                    System.out.println("Put on stack");
+                    System.out.println(game.getStack().peekAbility());
+                    // game.getStack().resolveStack();
+                }
+
+                game.getAction().checkStateEffects(false);
             } else {
                 System.out.println("Nope");
             }
@@ -220,13 +227,28 @@ public class Main {
                     boolean canAttack = CombatUtil.canAttack(card, defender);
                     System.out.println("Can Attack: " + canAttack);
                 }
-
-
-
-
                 ctx.json(Map.of("actions", responseActions));
             }
 
+        });
+
+        app.post("/resolve-stack", ctx -> {
+            var state = ctx.bodyAsClass(GameStateDTO.class);
+            System.out.println(state);
+
+            var game = StateMapper.StateToGame(state);
+            // var humanPlayer = game.getPlayer(ApiPlayerEnum.HUMAN_PLAYER);
+
+            if (game.getStack().isEmpty()) {
+                ctx.json(Map.of("status", "Error, stack is empty", "received", state));
+                return;
+            }
+
+            game.getStack().resolveStack();
+            game.getAction().checkStateEffects(false);
+
+            var newState = StateMapper.GameToState(game);
+            ctx.json(Map.of("status", "Ok", "state", newState));
         });
 
         app.post("/load-game", ctx -> {
